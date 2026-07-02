@@ -19,12 +19,14 @@ export default async function Home() {
   let storeStatus: "ok" | "unconfigured" = "ok";
   let storeMessage: string | null = null;
   let eventCount = 0;
+  // eslint-disable-next-line react-hooks/purity
   const start = Date.now();
   try {
     const events = await getStore().listByTime(1);
     eventCount = events.length;
     logger.info("home.list", "store probe ok", {
       count: eventCount,
+      // eslint-disable-next-line react-hooks/purity
       durationMs: Date.now() - start,
     });
   } catch (e) {

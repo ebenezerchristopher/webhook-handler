@@ -208,12 +208,15 @@ test("ingest: emits start, order_classified, claim log stages in order", async (
   const events: Array<{ level: string; stage: string }> = [];
   const capturingLogger = {
     info(stage: string, msg: string) {
+      void msg;
       events.push({ level: "info", stage });
     },
     warn(stage: string, msg: string) {
+      void msg;
       events.push({ level: "warn", stage });
     },
     error(stage: string, msg: string) {
+      void msg;
       events.push({ level: "error", stage });
     },
   };
