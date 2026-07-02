@@ -38,7 +38,7 @@ npm run build
 npm run dev
 ```
 
-The dev server needs `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in the environment to be useful (otherwise `/api/webhook` returns 503 with `store_unconfigured`).
+The dev server needs `KV_REST_API_URL` and `KV_REST_API_TOKEN` in the environment to be useful (otherwise `/api/webhook` returns 503 with `store_unconfigured`).
 
 ## Deploy
 

@@ -93,15 +93,15 @@ export function createRedisStore(redis: Redis): IngestStore {
 let cached: IngestStore | null = null;
 export function getStore(): IngestStore {
   if (cached) return cached;
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
     throw new Error(
-      "Upstash Redis is not configured. Set UPSTASH_REDIS_REST_URL and " +
-        "UPSTASH_REDIS_REST_TOKEN (Vercel Marketplace -> Upstash Redis).",
+      "Upstash Redis is not configured. Set KV_REST_API_URL and " +
+        "KV_REST_API_TOKEN (Vercel Marketplace -> Upstash Redis).",
     );
   }
   const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
   });
   cached = createRedisStore(redis);
   return cached;

@@ -12,7 +12,7 @@ The app is ready. Two paths — pick one:
 3. **Provision Upstash Redis**:
    - In the Vercel project screen, open the **Storage** tab → **Create Database** → **Redis** → pick **Upstash** from the marketplace.
    - Pick a region close to your function region. Free tier is fine.
-   - Vercel will auto-bind two env vars: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Confirm they appear in **Settings → Environment Variables** before deploying.
+   - Vercel will auto-bind two env vars: `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Confirm they appear in **Settings → Environment Variables** before deploying.
 4. **(Optional) Add a webhook secret** for HMAC: in **Settings → Environment Variables**, add `WEBHOOK_SECRET` = any random string. Send `X-Webhook-Signature: sha256=<hex>` from the sender.
 5. Click **Deploy**. Vercel assigns a URL like `https://ai-builder-starter-<hash>.vercel.app`. That's the live URL.
 
