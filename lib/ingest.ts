@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import type { IngestStore, EventInput, ClaimResult, OrderStatus } from "./types.ts";
+import type { Logger } from "./log.ts";
+import { noopLogger } from "./log.ts";
 
 const ID_HEADERS = [
   "x-webhook-id",
@@ -82,20 +84,43 @@ export async function ingest(input: {
   headers: Record<string, string>;
   body: string;
   source?: string;
+  logger?: Logger;
 }): Promise<ClaimResult> {
+  const logger = input.logger ?? noopLogger;
   const headers = normalizeHeaders(input.headers);
   const eventId = deriveEventId({ headers, body: input.body });
   const source = (input.source && input.source.trim()) || deriveSource({ headers });
   const seq = deriveSeq({ headers, body: input.body });
 
+  logger.info("ingest.start", "ingest called", {
+    eventId,
+    source,
+    seq,
+    bodyLength: input.body.length,
+  });
+
+  let maxSeq: number | null = null;
   let orderStatus: OrderStatus = "no_seq";
   if (seq != null) {
-    const max = await input.store.maxSeqForSource(source);
-    if (max == null) orderStatus = "in_order";
-    else if (seq <= max) orderStatus = "late";
-    else if (seq === max + 1) orderStatus = "in_order";
+    try {
+      maxSeq = await input.store.maxSeqForSource(source);
+    } catch (e) {
+      logger.error("ingest.redis_error", "maxSeqForSource failed", {
+        error: (e as Error).message,
+        op: "maxSeqForSource",
+      });
+      throw e;
+    }
+    if (maxSeq == null) orderStatus = "in_order";
+    else if (seq <= maxSeq) orderStatus = "late";
+    else if (seq === maxSeq + 1) orderStatus = "in_order";
     else orderStatus = "gap_detected";
   }
+
+  logger.info("ingest.order_classified", "order status determined", {
+    orderStatus,
+    maxSeq,
+  });
 
   const eventInput: EventInput = {
     eventId,
@@ -107,7 +132,25 @@ export async function ingest(input: {
     headers,
   };
 
-  return input.store.claimAndStore(eventInput);
+  const claimStart = Date.now();
+  let result: ClaimResult;
+  try {
+    result = await input.store.claimAndStore(eventInput);
+  } catch (e) {
+    logger.error("ingest.redis_error", "claimAndStore failed", {
+      error: (e as Error).message,
+      op: "claimAndStore",
+    });
+    throw e;
+  }
+  const durationMs = Date.now() - claimStart;
+
+  logger.info("ingest.claim", "claim completed", {
+    status: result.status,
+    durationMs,
+  });
+
+  return result;
 }
 
 function normalizeHeaders(h: Record<string, string>): Record<string, string> {

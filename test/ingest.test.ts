@@ -203,3 +203,63 @@ test("verifySignature: rejects bad signature", async () => {
   const { verifySignature } = await import("../lib/verify.ts");
   assert.equal(verifySignature("{}", "sha256=deadbeef", "shh"), false);
 });
+
+test("ingest: emits start, order_classified, claim log stages in order", async () => {
+  const events: Array<{ level: string; stage: string }> = [];
+  const capturingLogger = {
+    info(stage: string, msg: string) {
+      events.push({ level: "info", stage });
+    },
+    warn(stage: string, msg: string) {
+      events.push({ level: "warn", stage });
+    },
+    error(stage: string, msg: string) {
+      events.push({ level: "error", stage });
+    },
+  };
+  const store = makeFakeStore();
+  await ingest({
+    store,
+    headers: { "x-webhook-id": "log_1" },
+    body: "{}",
+    source: "s",
+    logger: capturingLogger,
+  });
+  const stages = events.map((e) => e.stage);
+  const startIdx = stages.indexOf("ingest.start");
+  const orderIdx = stages.indexOf("ingest.order_classified");
+  const claimIdx = stages.indexOf("ingest.claim");
+  assert.ok(startIdx >= 0, "ingest.start logged");
+  assert.ok(orderIdx > startIdx, "ingest.order_classified after start");
+  assert.ok(claimIdx > orderIdx, "ingest.claim after order_classified");
+});
+
+test("ingest: logs ingest.redis_error when store.maxSeqForSource throws", async () => {
+  const events: Array<{ level: string; stage: string; op?: string }> = [];
+  const capturingLogger = {
+    info(stage: string) { events.push({ level: "info", stage }); },
+    warn(stage: string) { events.push({ level: "warn", stage }); },
+    error(stage: string, _msg: string, extra?: Record<string, unknown>) {
+      events.push({ level: "error", stage, op: extra?.op as string | undefined });
+    },
+  };
+  const store: IngestStore = {
+    async claimAndStore() { throw new Error("should not be called"); },
+    async maxSeqForSource() { throw new Error("redis down"); },
+    async listByTime() { return []; },
+    async getEvent() { return null; },
+  };
+  await assert.rejects(
+    () => ingest({
+      store,
+      headers: { "x-webhook-id": "err_1", "x-webhook-sequence": "1" },
+      body: "{}",
+      source: "s",
+      logger: capturingLogger,
+    }),
+    /redis down/,
+  );
+  const redisErr = events.find((e) => e.stage === "ingest.redis_error");
+  assert.ok(redisErr, "ingest.redis_error logged");
+  assert.equal(redisErr!.op, "maxSeqForSource");
+});
