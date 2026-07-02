@@ -138,7 +138,7 @@ export default async function Home() {
           </p>
           <pre className="mt-4 overflow-x-auto rounded-md bg-zinc-900 px-4 py-3 font-mono text-xs text-zinc-100">
 {`# First delivery — accepted
-curl -X POST https://YOUR-DOMAIN.vercel.app/api/webhook \\
+curl -X POST https://webhook-handler-zeta.vercel.app/api/webhook \\
   -H 'Content-Type: application/json' \\
   -H 'X-Webhook-Id: evt_42' \\
   -H 'X-Webhook-Source: github' \\
@@ -146,7 +146,7 @@ curl -X POST https://YOUR-DOMAIN.vercel.app/api/webhook \\
   -d '{"action":"opened","issue":42}'
 
 # Same event again — duplicate
-curl -X POST https://YOUR-DOMAIN.vercel.app/api/webhook \\
+curl -X POST https://webhook-handler-zeta.vercel.app/api/webhook \\
   -H 'X-Webhook-Id: evt_42' \\
   -H 'X-Webhook-Source: github' \\
   -H 'X-Webhook-Sequence: 1' \\
