@@ -4,7 +4,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac, createHash } from "node:crypto";
 
-import { ingest, deriveEventId, type IngestStore } from "../lib/ingest.ts";
+import { ingest, deriveEventId } from "../lib/ingest.ts";
+import type { IngestStore, StoredEvent } from "../lib/types.ts";
 
 // Minimal in-memory store that mirrors the Lua script's contract.
 // A shared backing Map lets us simulate "process restart" — two store
@@ -21,9 +22,9 @@ function makeFakeStore(shared?: {
     async claimAndStore(input) {
       const key = `${input.source}:${input.eventId}`;
       if (events.has(key)) {
-        return { status: "duplicate", event: events.get(key) };
+        return { status: "duplicate", event: events.get(key) as StoredEvent };
       }
-      const stored = { ...input, receivedAt: input.receivedAt ?? Date.now() };
+      const stored: StoredEvent = { ...input, receivedAt: input.receivedAt ?? Date.now() };
       events.set(key, stored);
       if (typeof input.seq === "number" && Number.isFinite(input.seq)) {
         seqs.set(input.source, Math.max(seqs.get(input.source) ?? 0, input.seq));
