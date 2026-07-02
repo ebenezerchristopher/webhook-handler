@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getStore } from "../lib/store.ts";
+import { randomUUID } from "node:crypto";
+import { createLogger } from "../lib/log.ts";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,15 +14,25 @@ function endpointUrl(path: string): string {
 }
 
 export default async function Home() {
+  const requestId = randomUUID();
+  const logger = createLogger({ requestId });
   let storeStatus: "ok" | "unconfigured" = "ok";
   let storeMessage: string | null = null;
   let eventCount = 0;
+  const start = Date.now();
   try {
     const events = await getStore().listByTime(1);
     eventCount = events.length;
+    logger.info("home.list", "store probe ok", {
+      count: eventCount,
+      durationMs: Date.now() - start,
+    });
   } catch (e) {
     storeStatus = "unconfigured";
     storeMessage = (e as Error).message;
+    logger.warn("home.list_error", "store probe failed", {
+      error: (e as Error).message,
+    });
   }
 
   return (
